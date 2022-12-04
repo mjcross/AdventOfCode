@@ -5,25 +5,21 @@ class RPS(Enum):
     PAPER = 1
     SCISSORS = 2
 
-    #               ROCK        PAPER       SCISSORS
-    _beats =    (   SCISSORS,   ROCK,       PAPER   )
-    _beatenby = (   PAPER,      SCISSORS,   ROCK    )
-
     @property
     def score(self):
         return RPS._scores.value[self.value]
 
     @property
     def beats(self):
-        return RPS(RPS._beats.value[self.value])
+        return (RPS.SCISSORS, RPS.ROCK, RPS.PAPER)[self.value]
 
     @property
     def beatenby(self):
-        return RPS(RPS._beatenby.value[self.value])
+        return (RPS.PAPER, RPS.SCISSORS, RPS.ROCK)[self.value]
 
 
 def main():
-    for turn in (RPS.ROCK, RPS.PAPER, RPS.SCISSORS):
+    for turn in RPS:
         print(f'{turn.name} beats {turn.beats.name} but is beaten by {turn.beatenby.name}')
 
 
