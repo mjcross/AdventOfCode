@@ -58,6 +58,8 @@ def main():
                 myGo = toBeat[theirGo]
             elif result == Result.LOSE:
                 myGo = toLoseTo[theirGo]
+            else:
+                myGo = theirGo  # achieve a draw
             
             myScore += symbolScore[myGo] + resultScore[result]
 

@@ -44,11 +44,12 @@ def main():
             theirGo = letter[line[0]]
             myGo = letter[line[2]]
 
-            result = Result.LOSE
             if myGo == theirGo:
                 result = Result.DRAW
-            elif beats[myGo] == theirGo:
+            elif theirGo == beats[myGo]:
                 result = Result.WIN
+            else:
+                result = Result.LOSE
             
             myScore += symbolScore[myGo] + resultScore[result]
 
