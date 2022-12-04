@@ -28,7 +28,7 @@ beats = {
     Symbol.SCISSORS: Symbol.PAPER
 }
 
-letter = {
+symbol = {
     'A': Symbol.ROCK, 
     'B': Symbol.PAPER, 
     'C': Symbol.SCISSORS, 
@@ -41,8 +41,8 @@ def main():
     myScore = 0
     with open('input.txt') as input:
         for line in input:
-            theirGo = letter[line[0]]
-            myGo = letter[line[2]]
+            theirGo = symbol[line[0]]
+            myGo = symbol[line[2]]
 
             if myGo == theirGo:
                 result = Result.DRAW
