@@ -43,6 +43,18 @@ def movestacks(file, stacks):
     return stacks
 
 
+def movestacks9001(file, stacks):
+    for line in file:
+        fields = line.lower().split()
+        numboxes = int(fields[fields.index('move') + 1])
+        fromstack = stacks[fields[fields.index('from') + 1]]
+        tostack = stacks[fields[fields.index('to') + 1]]
+        boxes = [fromstack.dq.popleft() for box in range(numboxes)]
+        boxes.reverse()
+        tostack.dq.extendleft(boxes)
+    return stacks
+
+
 def part1():
     with open('input.txt') as inFile:
         stacks = readstacks(inFile)
@@ -52,9 +64,9 @@ def part1():
 
 def part2():
     with open('input.txt') as inFile:
-        for line in inFile:
-            pass
-    return
+        stacks = readstacks(inFile)
+        stacks = movestacks9001(inFile, stacks)
+        return [stacks[name].dq.popleft() for name in stacks.keys()]
 
 
 def main():
