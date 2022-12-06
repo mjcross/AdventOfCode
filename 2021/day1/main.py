@@ -1,8 +1,3 @@
-tests = [
-    ((199, 200, 208, 210, 200, 207, 240, 269, 260, 263), (7, 5))
-]
-
-
 def delta(seq):
     previtem = seq[0]
     for thisitem in seq[1:]:
@@ -17,8 +12,8 @@ def windows(seq, size):
         i += 1
 
 
-def numincreases(depths):
-    return sum(delta > 0 for delta in delta(depths))
+def numincreases(seq):
+    return sum(delta > 0 for delta in delta(seq))
 
 
 def part1(seq):
@@ -30,6 +25,9 @@ def part2(seq):
 
 
 def main():
+    tests = [
+        ((199, 200, 208, 210, 200, 207, 240, 269, 260, 263), (7, 5))]
+
     for testdata, answer in tests:
         assert part1(testdata) == answer[0]
         assert part2(testdata) == answer[1]
