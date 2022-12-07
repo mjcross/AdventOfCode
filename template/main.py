@@ -16,7 +16,7 @@ def checkexamples():
 
 def main():
     checkexamples()
-    with open(input.txt) as infile:
+    with open('input.txt') as infile:
         print(part1())
         print(part2())
 
