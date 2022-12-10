@@ -61,7 +61,7 @@ def part2(prog):
     crt = []
     for crtpos, x in enumerate(output):
         if abs((crtpos % 40) - x) <= 1:
-            crt.append('*')
+            crt.append('#')
         else:
             crt.append(' ')
         #print(f'crtpos {crtpos:02d} sprite {list(range(x-1, x+2))} \terr {abs((crtpos % 40) - x):02d} crt {"".join(crt)}')
