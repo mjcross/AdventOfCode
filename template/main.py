@@ -1,24 +1,30 @@
-def part1():
+def part1(stream):
     pass
 
 
-def part2():
+def part2(stream):
     pass
 
 
 def checkexamples():
-    examples = [
-    ]
-    for data, answer in examples:
-        assert part1(data) == answer[0]
-        assert part2(data) == answer[1]
+    with open('example.txt') as stream:
+        example1 = part1(stream)
+        assert example1 == 'xxxxx', example1
+
+    with open('example.txt') as stream:
+        example2 = part2(stream)
+        assert example2 == 'xxxxx', example2
 
 
 def main():
     checkexamples()
-    with open('input.txt') as infile:
-        print(part1())
-        print(part2())
+
+    with open('input.txt') as stream:
+        print('part1', part1(stream))
+
+    with open('input.txt') as stream:
+        print('part2', part2(stream))
+
 
 if __name__ == '__main__':
     main()
