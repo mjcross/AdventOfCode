@@ -28,8 +28,9 @@ class Map:
             self.height.extend(row)
         self.ncols = len(row)
 
-        self.startpos = self.height.index(ord('S'))
-        self.height[self.startpos] = ord('a')
+        self.startpositions = [self.height.index(ord('S'))]
+        for startpos in self.startpositions:
+            self.height[startpos] = ord('a')
 
         self.endpos = self.height.index(ord('E'))
         self.height[self.endpos] = ord('z')
@@ -38,8 +39,9 @@ class Map:
         nrows = self.nrows
         ncols = self.ncols
         self.visited = array('B', [False for _ in self.height])
-        self.visited[self.startpos] = True
-        points = [self.startpos]
+        points = self.startpositions
+        for point in points:
+            self.visited[point] = True
         pathlen = 0
         while points:
             pathlen += 1
@@ -54,7 +56,6 @@ class Map:
                     offsets.append(ncols)
                 if point - ncols >= 0:
                     offsets.append(-ncols)
-
                 for candidate in [point + offset for offset in offsets]:
                     if not self.visited[candidate] and self.height[candidate] <= 1 + self.height[point]:
                         self.visited[candidate] = True
@@ -62,6 +63,7 @@ class Map:
                         if candidate == self.endpos:
                             return pathlen
             points = newpoints
+        return None
 
 def part1(stream):
     map = Map()
@@ -72,13 +74,8 @@ def part1(stream):
 def part2(stream):
     map = Map()
     map.fromstream(stream)
-    startpositions = [position for position, height in enumerate(map.height) if height == ord('a')]
-    overallbestpathlen = len(map.height)
-    for map.startpos in startpositions:
-        bestpathlen = map.bestpathlen()
-        if bestpathlen and bestpathlen < overallbestpathlen:
-            overallbestpathlen = bestpathlen
-    return overallbestpathlen
+    map.startpositions = [position for position, height in enumerate(map.height) if height == ord('a')]
+    return map.bestpathlen()
 
 
 def checkexamples():
