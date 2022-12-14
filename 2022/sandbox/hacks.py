@@ -1,14 +1,11 @@
-class MyClass:
-    def __init__(self, value):
-        self.value = value
+from itertools import cycle
 
-    def __repr__(self):
-        return(f'{self.value}')
+x = [1,2,3]
 
-    def __lt__(self, other):
-        print('lt')
-        return self.value > other.value
+it = cycle(x)
 
+for _ in range(10):
+    print(next(it))
 
-seq = [MyClass(x) for x in [5,2,4,2,3]]
-print(sorted(seq, reverse=True))
+l = [next(it)] * 7
+print(l)
