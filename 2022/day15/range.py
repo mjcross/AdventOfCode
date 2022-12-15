@@ -4,7 +4,7 @@ class Range:
         self.max = max
 
     def __repr__(self):
-        return f'Range(min={self.min}, max={self.max})'
+        return f'Range(min={self.min:,}, max={self.max:,})'
 
     def __eq__(self, other):
         return self.min == other.min and self.max == other.max
@@ -30,6 +30,7 @@ class Range:
             for other in list:
                 if self == other:
                     newlist.append(other)       # new range duplicates existing one, so skip it
+                    nooverlaps = False
                 else:
                     if not self.overlaps(other):
                         newlist.append(other)   # existing range is disjoint so leave it alone
@@ -37,6 +38,7 @@ class Range:
                                                 # new range overlaps existing: combine and add later (recursively)
                         combined = Range(min=min(self.min, other.min), max = max(self.max, other.max))
                         modifiedelements.append(combined)
+                        #modifiedelements = combined.addtolist(modifiedelements)
                         nooverlaps = False
 
             if nooverlaps:
@@ -47,14 +49,14 @@ class Range:
 
             return newlist
 
-def main():
-    r1 = Range(0, 10)
-    r2 = Range(5, 25)
-    r3 = Range(20, 30)
-    r4 = Range(40, 50)
 
-    rangelist = [r2, r3, r4]
-    print(r1.addtolist(rangelist))
+def main():
+    r1 = Range(2, 5)
+    r2 = Range(7, 7)
+    r3 = Range(9, 12)
+
+    rangelist = [r1, r2, r3]
+    print(Range(0, 11).addtolist(rangelist))
 
     
 

@@ -1,4 +1,5 @@
 from range import Range
+import timeit
 
 
 def mdist(x1, y1, x2, y2):
@@ -42,10 +43,8 @@ def part1(stream, rownum):
     rowranges = []
     for sensor in sensors:
         rowrange = sensor.rowrange(rownum)
-        #print(f'sensor {sensor} adding rowrange {rowrange}')
         if rowrange:
-            rowranges = (sensor.rowrange(rownum).addtolist(rowranges))
-        #print(f'\tranges: {rowranges}\n')
+            rowranges = rowrange.addtolist(rowranges)
     squarescovered = sum([len(rowrange) for rowrange in rowranges])
     numbeacons = len([True for beacon in beacons if beacon[1] == rownum])
     return squarescovered - numbeacons
@@ -54,17 +53,25 @@ def part1(stream, rownum):
 def part2(stream, maxordinate):
     sensors, beacons = parse(stream)
     for rownum in range(maxordinate + 1):
-        if rownum % 10000 == 0:
-            print(rownum, ' ', end='', flush=True)
+        if rownum and rownum % 10000 == 0:
+            print('.', end='', flush=True)
         rowranges = []
         for sensor in sensors:
             rowrange = sensor.rowrange(rownum)
             if rowrange:
-                rowranges = (sensor.rowrange(rownum).addtolist(rowranges))
-        numbeacons = len([True for beacon in beacons if beacon[1] == rownum])
-        if len(rowranges) > 1 and rowranges[0] != rowranges[1]:
-            print()
-            print(rownum, rowranges)
+                rowranges = rowrange.addtolist(rowranges)
+        if len(rowranges) > 1:
+            r1, r2 = rowranges[0: 2]
+            x1 = r2.min - r1.max
+            x2 = r1.min - r2.max
+            
+            assert (x1 == 2 or x2 == 2)
+            if x1 == 2:
+                x = r1.max + 1
+            else:
+                x = r2.max + 1
+            y = rownum
+            return x * 4000000 + y
 
 
 def checkexamples():
@@ -74,7 +81,7 @@ def checkexamples():
 
     with open('example.txt') as stream:
         example2 = part2(stream, 20)
-        # assert example2 == 'xxxxx', example2
+        assert example2 == 56000011, example2
 
 
 def main():
@@ -84,8 +91,11 @@ def main():
         print('part1', part1(stream, 2000000))
 
     with open('input.txt') as stream:
-        part2(stream, 4000000)
-
+        print ('part2', end=' ')
+        start = timeit.default_timer()
+        print(part2(stream, 4000000))
+        stop = timeit.default_timer()
+        print(f'elasped: {stop - start:.2f}')
 
 if __name__ == '__main__':
     main()
