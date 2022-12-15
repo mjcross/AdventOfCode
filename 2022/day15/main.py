@@ -49,19 +49,32 @@ def part1(stream, rownum):
     squarescovered = sum([len(rowrange) for rowrange in rowranges])
     numbeacons = len([True for beacon in beacons if beacon[1] == rownum])
     return squarescovered - numbeacons
-    
 
-def part2(stream):
-    pass
+
+def part2(stream, maxordinate):
+    sensors, beacons = parse(stream)
+    for rownum in range(maxordinate + 1):
+        if rownum % 10000 == 0:
+            print(rownum, ' ', end='', flush=True)
+        rowranges = []
+        for sensor in sensors:
+            rowrange = sensor.rowrange(rownum)
+            if rowrange:
+                rowranges = (sensor.rowrange(rownum).addtolist(rowranges))
+        numbeacons = len([True for beacon in beacons if beacon[1] == rownum])
+        if len(rowranges) > 1 and rowranges[0] != rowranges[1]:
+            print()
+            print(rownum, rowranges)
+
 
 def checkexamples():
     with open('example.txt') as stream:
         example1 = part1(stream, rownum=10)
         assert example1 == 26, example1
 
-    #with open('example.txt') as stream:
-    #    example2 = part2(stream)
-    #    assert example2 == 'xxxxx', example2
+    with open('example.txt') as stream:
+        example2 = part2(stream, 20)
+        # assert example2 == 'xxxxx', example2
 
 
 def main():
@@ -70,8 +83,8 @@ def main():
     with open('input.txt') as stream:
         print('part1', part1(stream, 2000000))
 
-    #with open('input.txt') as stream:
-    #    print('part2', part2(stream))
+    with open('input.txt') as stream:
+        part2(stream, 4000000)
 
 
 if __name__ == '__main__':
