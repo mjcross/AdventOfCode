@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class State(Enum):
     Fetch = 0
     Adding = 1

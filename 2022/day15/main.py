@@ -1,4 +1,4 @@
-from range import Range
+from utils.range import Range
 import timeit
 
 

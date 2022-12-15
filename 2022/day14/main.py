@@ -1,5 +1,5 @@
-from array2d import Array2D
-from iterate2d import iterate2d
+from utils.array2d import Array2D
+from utils.iterate2d import iterate2d
 
 AIR = ord('.')
 ROCK = ord('#')
