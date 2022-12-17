@@ -35,12 +35,12 @@ def parse(stream):
 
 
 def pathtotal(timeleft, thisvalve, totalflows, counts):
-    print(f'at valve {valvename[thisvalve]} time left {timeleft}')
+    print(f'{"." * timeleft}at valve {valvename[thisvalve]} with {timeleft} mins left')
 
-    if timeleft <= 1:
-        # no time left to do anything
+    if timeleft <= 2:
+        # no time left to open a valve and get some flow
         # calculate the total flow for this path
-        print(f'\tout of time! total flow for this path {sum(valvetotalflow)}')
+        print(f'{"." * (30 - timeleft)}insuffient time to open another valve - path total: {sum(valvetotalflow)}')
         return sum(valvetotalflow)
 
     # decide whether to open the valve in this room
@@ -50,23 +50,25 @@ def pathtotal(timeleft, thisvalve, totalflows, counts):
         timeleft -= 1
         if timeleft > 0:
             totalflows[thisvalve] = timeleft * valveflowrate[thisvalve]
-            print(f'\topened {valvename[thisvalve]} achieving {timeleft} x {valveflowrate[thisvalve]} = {totalflows[thisvalve]}')
+            print(f'{"." * (30 - timeleft)}opened {valvename[thisvalve]} achieving {timeleft} x {valveflowrate[thisvalve]} = {totalflows[thisvalve]}')
 
     if timeleft >= 3:
         # there is ehough time left to go down a tunnel, open a valve and get some flow
-        besttotalflow = 0
+        subpathflows = []
         for tunnelindex, newvalve in enumerate(valvetunnels[thisvalve]):
             # don't go down any tunnel more than twice
             if valvetunnelcounts[thisvalve][tunnelindex] <= 2:
                 valvetunnelcounts[thisvalve][tunnelindex] += 1
-                print(f'\ttrying tunnel {valvename[tunnelindex]} traversal count {valvetunnelcounts[thisvalve][tunnelindex]}')
-                besttotalflow = max(
-                    besttotalflow, 
+                print(f'{"." * (30 - timeleft)}trying tunnel {valvename[tunnelindex]} traversal count {valvetunnelcounts[thisvalve][tunnelindex]}')
+                subpathflows.append(
                     pathtotal(timeleft - 1, newvalve, copy(valvetotalflow), deepcopy(valvetunnelcounts)))
         
         # tried all the tunnels
-        print(f'\tout of tunnels! best total flow for this path {besttotalflow}')
-        return besttotalflow
+        print(f'{"." * (30 - timeleft)}no more tunnels to try! subpathflows {subpathflows} best {max(subpathflows)}')
+        return max(subpathflows)
+
+    print(f'{"." * (30 - timeleft)}insufficient time to go down another tunnel! subpathflows {subpathflows} best {max(subpathflows)}')
+    return max(subpathflows)
 
 
 def part1(stream):
