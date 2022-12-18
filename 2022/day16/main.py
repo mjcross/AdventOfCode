@@ -1,81 +1,102 @@
-from array import array
-from copy import copy, deepcopy
+"""
+Observations about the puzzle
+=============================
+1) The optimal route often involves passing through a room without stopping to
+turn on a slow valve
+2) Before starting to solve the graph, cull out all zero-rated rooms with only
+one way in and one way out ('transit nodes')... except the start node!
+3) Do NOT try to find the optimal route by trying every possible 30min path 
+through the graph. Instead, pick the next sensible destination (a room with a 
+turn-on-able valve); travel by the lowest cost route, without stopping, and
+turn on the valve. You can then exhaust over all possible sequences of valves.
+4) The cheapest route between any pair of nodes without stopping doesn't
+change, so it can be pre-computed.
+5) Heuristics like not going down blind alleys once, only traversing tunnels
+once in each direction etc appear to be negated by the puzzle mechanic. I
+think you're better off doing least-cost navigation between chosen nodes.
+"""
 
-# globals
-valveindex = {}                 # valve name -> index
-valvename = []                  # valve nams
-valveflowrate = array('B')      # valve flow rates
-valvetotalflow = array('I')     # total flow through each valve
-valvetunnels = []               # tunnels from each valve
-valvetunnelcounts = []          # number of times each tunnel from each valve has been traversed 
+from utils.route import Node, leasthops, hoptable, showhoptable
+from itertools import permutations
+from copy import copy
+
+debug = 3
+
+class Valve(Node):
+    def __init__(self, name, flowrate, edges):
+        self.name = name
+        self.flowrate = flowrate
+        self.edges = edges
+
+    def __repr__(self):
+        return (
+            f"Valve(name='{self.name}'"
+            f', flowrate={self.flowrate:2d}'
+            f', tunnels={[edge.name for edge in self.edges]})')
 
 
 def parse(stream):
-    """unpck records into global lists"""
-    valvetunnelnames = []
- 
-    index = 0
+    """Takes a file-type object and returns a dictionary of {name: Valve} pairs."""
+    valvedict = {}
     for line in stream:
-
-        # unpack record and add to lists
+        # create node from line of text like:
+        #   "Valve AA has flow rate=0; tunnels lead to valves DD, II, BB"
         field = line.split()
-        valvename.append(field[1])
-        valveflowrate.append(int(field[4].strip(';').split('=')[1]))
-        valvetotalflow.append(0)
-        valvetunnelnames.append([item.strip(',') for item in field[9:]])
-        valvetunnelcounts.append([0 for item in field[9:]])
-
-        # associate name with index
-        valveindex[field[1]] = index
-        index += 1
-
-    # convert tunnelnames to indices
-    for tunnelname in valvetunnelnames:
-        valvetunnels.append([valveindex[name] for name in tunnelname])
-
-
-def pathtotal(timeleft, thisvalve, totalflows, counts):
-    print(f'{"." * timeleft}at valve {valvename[thisvalve]} with {timeleft} mins left')
-
-    if timeleft <= 2:
-        # no time left to open a valve and get some flow
-        # calculate the total flow for this path
-        print(f'{"." * (30 - timeleft)}insuffient time to open another valve - path total: {sum(valvetotalflow)}')
-        return sum(valvetotalflow)
-
-    # decide whether to open the valve in this room
-    if totalflows[thisvalve] == 0 and valveflowrate[thisvalve]:
-        # this valve is closed and has a non-zero flow rate
-        #! in the general case it /might/ be worth skipping a low quality valve
-        timeleft -= 1
-        if timeleft > 0:
-            totalflows[thisvalve] = timeleft * valveflowrate[thisvalve]
-            print(f'{"." * (30 - timeleft)}opened {valvename[thisvalve]} achieving {timeleft} x {valveflowrate[thisvalve]} = {totalflows[thisvalve]}')
-
-    if timeleft >= 3:
-        # there is ehough time left to go down a tunnel, open a valve and get some flow
-        subpathflows = []
-        for tunnelindex, newvalve in enumerate(valvetunnels[thisvalve]):
-            # don't go down any tunnel more than twice
-            if valvetunnelcounts[thisvalve][tunnelindex] <= 2:
-                valvetunnelcounts[thisvalve][tunnelindex] += 1
-                print(f'{"." * (30 - timeleft)}trying tunnel {valvename[tunnelindex]} traversal count {valvetunnelcounts[thisvalve][tunnelindex]}')
-                subpathflows.append(
-                    pathtotal(timeleft - 1, newvalve, copy(valvetotalflow), deepcopy(valvetunnelcounts)))
-        
-        # tried all the tunnels
-        print(f'{"." * (30 - timeleft)}no more tunnels to try! subpathflows {subpathflows} best {max(subpathflows)}')
-        return max(subpathflows)
-
-    print(f'{"." * (30 - timeleft)}insufficient time to go down another tunnel! subpathflows {subpathflows} best {max(subpathflows)}')
-    return max(subpathflows)
+        name = field[1]
+        flowrate = int(field[4].split('=')[-1].strip(';'))
+        edges = [
+            name.strip(',')
+            for name in field[9:]]
+        valvedict[name] = Valve(name=name, flowrate=flowrate, edges=edges)
+    # link edges to nodes
+    for valve in valvedict.values():
+        valve.edges = [valvedict[edge] for edge in valve.edges]
+    return valvedict
 
 
 def part1(stream):
-    parse(stream)
+    valvedict = parse(stream)
+    if debug >= 3:
+        for name, valve in valvedict.items():
+            print(f'name: {name} valve: {valve}')
 
-    timeleft = 30
-    return pathtotal(timeleft, valveindex['AA'], copy(valvetotalflow), deepcopy(valvetunnelcounts))
+    # select start point and valves with non-zero flowrates
+    start = valvedict['AA']
+    valves = [valve for valve in valvedict.values() if valve.flowrate]
+    if debug >= 2:
+        for valve in valves:
+            print(valve)
+
+    # pre-calculate hops between valves
+    leasthops = hoptable([start] + copy(valves))
+    if debug >= 1:
+        showhoptable(leasthops)
+
+    bestflow = 0
+    for route in permutations(valves):
+        nodelist = list(route)
+        current = start
+        timeleft = 30
+        flow = 0
+        while nodelist and timeleft > 0:
+            # go down tunnel
+            dest = nodelist.pop()
+            timeleft -= leasthops[(current, dest)]
+            current = dest
+            if debug >=3:
+                print(f'Arrive at {current.name} with {timeleft} min left', end='')
+            # turn on valve if there's time
+            timeleft -= 1
+            if timeleft > 0:
+                flow += current.flowrate * timeleft
+                if debug >=3:
+                    print(f'\topened valve with flowrate {current.flowrate:2d} with {timeleft} min left', end='')
+                    print(f'\tflow = {current.flowrate * timeleft:3d}, total {flow}')
+        bestflow = max(bestflow, flow)
+        if debug >=2:
+            print(f'route: {[dest.name for dest in route]} flow {flow} best {bestflow}')
+    return bestflow
+
 
 def part2(stream):
     pass
@@ -84,7 +105,7 @@ def part2(stream):
 def checkexamples():
     with open('example.txt') as stream:
         example1 = part1(stream)
-        #assert example1 == 'xxxxx', example1
+        assert example1 == 1651, example1
 
     #with open('example.txt') as stream:
     #    example2 = part2(stream)
@@ -94,8 +115,8 @@ def checkexamples():
 def main():
     checkexamples()
 
-    #with open('input.txt') as stream:
-    #    print('part1', part1(stream))
+    with open('input.txt') as stream:
+        print('part1', part1(stream))
 
     #with open('input.txt') as stream:
     #    print('part2', part2(stream))
