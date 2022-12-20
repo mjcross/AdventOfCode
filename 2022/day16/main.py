@@ -20,11 +20,11 @@ needed.
 """
 
 from utils.route import Node, leasthops, hoptable, showhoptable
-from itertools import permutations
+from itertools import permutations, product
 from copy import copy
 import timeit
 
-debug = 1
+debug = 0
 
 class Valve(Node):
     def __init__(self, name, flowrate, edges):
@@ -98,70 +98,231 @@ def topcut(current, flowtotal, cutsize, timeleft, leasthops, valvesleft, path):
         return bestflowtotal
 
 
+def topcut2(locations, flowtotal, cutsize, time, leasthops, valvesleft, paths, arrivaltimes, numunopened):
+    """Recursively explore the top 'cutsize' moves with several players, and return the best score."""
+
+    # initialise time left and best flow achieved so far
+    timeleft = 30 - time
+    bestflowtotal = flowtotal
+
+    # allow for not having to open the first valve
+    if locations[0].name == 'AA':
+        arrivaltimes=[arrivaltime - 1 for arrivaltime in arrivaltimes]
+
+    while True:
+        if debug >= 2:
+            print(f'\n=== Time {time} ({timeleft} mins left, valves left [{" ".join([valve.name for valve in valvesleft])}]) ===')
+            for playernum, (arrivaltime, location) in enumerate(zip(arrivaltimes, locations)):
+                print(f'player {playernum}', end=' ')
+                if time < arrivaltime:
+                    print(f'en route to {location.name}, arriving at time {arrivaltime}')
+                elif time == arrivaltime:
+                    print(f'arrived at {location.name} and started opening valve')
+                elif time == arrivaltime + 1:
+                    print(f'ready to move at {location.name}')
+                else:
+                    print(f'standing idle at {location.name}')
+
+        # manage valve openings
+
+        justopened = None
+        for playernum, (location, arrivaltime) in enumerate(zip(locations, arrivaltimes)):
+            if time == arrivaltime + 1:
+                # a player has just finished opening a valve
+                if location.flowrate > 0 and timeleft >= 1 and location != justopened:
+                    flowtotal += timeleft * location.flowrate
+                    justopened = location    # avoid race condition
+                    numunopened -= 1
+                    if debug >= 2:
+                        print(
+                            f'player {playernum} finished opening {location.name} with {timeleft} mins left '
+                            f'({location.flowrate} x {timeleft} min = {location.flowrate * timeleft:3d}) new total {flowtotal})')
+                    if numunopened == 0:
+                        break
+
+        # check whether we've finished this attempt
+        if timeleft <= 1 or numunopened == 0:
+            if debug >= 1:
+                print(f'>>> {paths} = {flowtotal}\t({timeleft} mins left, {numunopened} un-opened valves) <<<')
+            return max(flowtotal, bestflowtotal)
+
+        # choose next destinations for available players
+        playercandidates = []
+        for location, arrivaltime in zip(locations, arrivaltimes):
+            candidates = []
+            if time >= arrivaltime + 1:
+                # player has finished opening a valve and is ready to move
+                #   - identify top few destinations, based on time to get there and open the valve
+                candidates = [(valve, valve.flowrate * (timeleft - (1 + leasthops[location, valve]))) for valve in valvesleft]
+                candidates.sort(key=lambda x: x[1], reverse=True)
+                candidates = candidates[:cutsize]
+            playercandidates.append(candidates)
+
+        if debug >= 2:
+            for playernum, candidates in enumerate(playercandidates):
+                print(f'\tplayer {playernum} candidates:', end=' ')
+                if candidates:
+                    for candidate in candidates:
+                        print(f'\t{candidate[0].name} ({candidate[1]:3d})', end='')
+                    print()
+                else:
+                    print('\tn/a')
+
+        # recursively try the top few destinations for the available player(s)
+        #   - note that playercandidates[] entries are only set for available players
+
+        if playercandidates[0] and playercandidates[1]:
+            # both players are ready to move - explore all combinations of their two lists (this may be a bit OTT)
+            #! is there a slight possibility that both players are available, but there's only one valve left?
+            for candidate in product(*playercandidates):
+                dest0, flow0 = candidate[0]
+                dest1, flow1 = candidate[1]
+                if dest0 != dest1 or (len(playercandidates[0]) == 1 and len(playercandidates[1]) == 1):
+                    # don't send both players to the same destination unless there are no other options
+                    if debug >= 2:
+                        print(f'sending player 0 to {dest0.name}({flow0}/{leasthops[locations[0], dest0]} hops) and player 1 to {dest1.name}({flow1}/{leasthops[locations[1], dest1]} hops)')
+
+                    newvalvesleft = copy(valvesleft)
+                    newvalvesleft.remove(dest0)
+                    if dest1 != dest0:
+                        newvalvesleft.remove(dest1)
+
+                    newarrivaltimes = [
+                        time + leasthops[locations[0], dest0],
+                        time + leasthops[locations[1], dest1]
+                    ]
+
+                    result = topcut2(
+                        locations=[dest0, dest1],
+                        flowtotal=flowtotal,
+                        cutsize=cutsize,
+                        time=1 + min(newarrivaltimes),
+                        leasthops=leasthops,
+                        valvesleft=newvalvesleft,
+                        paths=[paths[0] + ' ' + dest0.name, paths[1] + ' ' + dest1.name],
+                        arrivaltimes=newarrivaltimes,
+                        numunopened=numunopened
+                    )
+
+                    bestflowtotal = max(bestflowtotal, result)
+
+            # tried all the options
+            return bestflowtotal
+
+        elif playercandidates[0]:
+            # only player0 is available
+            for candidate in playercandidates[0]:
+                dest0, flow0 = candidate
+                if debug >= 2:
+                    print(f'sending player 0 to {dest0.name}({flow0}/{leasthops[locations[0], dest0]} hops)')
+
+                newvalvesleft = copy(valvesleft)
+                newvalvesleft.remove(dest0)
+
+                newarrivaltimes = [
+                    time + leasthops[locations[0], dest0],
+                    arrivaltimes[1]
+                ]
+
+                result = topcut2(
+                    locations=[dest0, locations[1]],
+                    flowtotal=flowtotal,
+                    cutsize=cutsize,
+                    time=1 + min(newarrivaltimes),
+                    leasthops=leasthops,
+                    valvesleft=newvalvesleft,
+                    paths=[paths[0] + ' ' + dest0.name, paths[1]],
+                    arrivaltimes=newarrivaltimes,
+                    numunopened=numunopened
+                )
+
+                bestflowtotal = max(bestflowtotal, result)
+
+            # tried all the options
+            return bestflowtotal
+
+        elif playercandidates[1]:
+            # only player1 is available
+            for candidate in playercandidates[1]:
+                dest1, flow1 = candidate
+                if debug >= 2:
+                    print(f'sending player 1 to {dest1.name}({flow1}/{leasthops[locations[1], dest1]} hops)')
+
+                newvalvesleft = copy(valvesleft)
+                newvalvesleft.remove(dest1)
+
+                newarrivaltimes = [
+                    arrivaltimes[0],
+                    time + leasthops[locations[1], dest1],
+                ]
+
+                result = topcut2(
+                    locations=[locations[0], dest1],
+                    flowtotal=flowtotal,
+                    cutsize=cutsize,
+                    time=1 + min(newarrivaltimes),
+                    leasthops=leasthops,
+                    valvesleft=newvalvesleft,
+                    paths=[paths[0], paths[1] + ' ' + dest1.name],
+                    arrivaltimes=newarrivaltimes,
+                    numunopened=numunopened
+                )
+
+                bestflowtotal = max(bestflowtotal, result)
+
+            # tried all the options
+            return bestflowtotal
+
+        else:
+            # neither player was ready to move
+            if debug >= 2:
+                print('neither player is ready to move')
+            time += 1
+            timeleft -= 1
+
+
 def part1(stream):
     valvedict = parse(stream)
     start = valvedict['AA']
     valves = [valve for valve in valvedict.values() if valve.flowrate]
     leasthops = hoptable([start] + copy(valves))
-    return topcut(current=start, flowtotal=0, cutsize=8, timeleft=30, leasthops=leasthops, valvesleft=valves, path=[])
+    return topcut(
+        current=start, 
+        flowtotal=0, 
+        cutsize=8, 
+        timeleft=30, 
+        leasthops=leasthops, 
+        valvesleft=valves, 
+        path=[])
 
 
-def part1exhaust(stream):
+def part2(stream, cutsize):
     valvedict = parse(stream)
-    if debug >= 3:
-        for name, valve in valvedict.items():
-            print(f'name: {name} valve: {valve}')
-
-    # select start point and valves with non-zero flowrates
     start = valvedict['AA']
     valves = [valve for valve in valvedict.values() if valve.flowrate]
-    if debug >= 2:
-        for valve in valves:
-            print(valve)
-
-    # pre-calculate hops between valves
     leasthops = hoptable([start] + copy(valves))
-    if debug >= 1:
-        showhoptable(leasthops)
-
-    bestflow = 0
-    for route in permutations(valves):
-        nodelist = list(route)
-        current = start
-        timeleft = 30
-        flow = 0
-        while nodelist and timeleft > 0:
-            # go down tunnel
-            dest = nodelist.pop()
-            timeleft -= leasthops[(current, dest)]
-            current = dest
-            if debug >=3:
-                print(f'Arrive at {current.name} with {timeleft} min left', end='')
-            # turn on valve if there's time
-            timeleft -= 1
-            if timeleft > 0:
-                flow += current.flowrate * timeleft
-                if debug >=3:
-                    print(f'\topened valve with flowrate {current.flowrate:2d} with {timeleft} min left', end='')
-                    print(f'\tflow = {current.flowrate * timeleft:3d}, total {flow}')
-        bestflow = max(bestflow, flow)
-        if debug >=2:
-            print(f'route: {[dest.name for dest in route]} flow {flow} best {bestflow}')
-    return bestflow
-
-
-def part2(stream):
-    pass
+    return topcut2(
+        locations=[start, start],
+        flowtotal=0,
+        cutsize=cutsize,
+        time=4,
+        leasthops=leasthops,
+        valvesleft=valves,
+        paths=[start.name, start.name],
+        arrivaltimes=[4, 4],
+        numunopened=len(valves))
 
 
 def checkexamples():
     with open('example.txt') as stream:
         example1 = part1(stream)
+        print(f'example1 = {example1}')
         assert example1 == 1651, example1
 
-    #with open('example.txt') as stream:
-    #    example2 = part2(stream)
-    #    assert example2 == 'xxxxx', example2
+    with open('example.txt') as stream:
+        example2 = part2(stream, cutsize = 3)
+        print(f'example2 = {example2}')
+        assert example2 == 1707, example2
 
 
 def main():
@@ -172,10 +333,12 @@ def main():
         print('part1', part1(stream))
         stop = timeit.default_timer()
         print(f'took {stop-start:.2f} sec')
-
-    #with open('input.txt') as stream:
-    #    print('part2', part2(stream))
-
+   
+    with open('input.txt') as stream:
+        start = timeit.default_timer()
+        print('part2', part2(stream, cutsize=6))
+        stop = timeit.default_timer()
+        print(f'took {stop-start:.2f} sec')
 
 if __name__ == '__main__':
     main()
