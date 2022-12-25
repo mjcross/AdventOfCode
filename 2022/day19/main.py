@@ -1,3 +1,12 @@
+from collections import namedtuple
+
+Cost = namedtuple('Cost', 'ore clay obsidian')
+RobotCost = namedtuple('RobotCost', 'ore clay obsidian geode')
+
+class Factory:
+    def __init__(self, blueprint)
+
+
 def part1(stream):
     pass
 
