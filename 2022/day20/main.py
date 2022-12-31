@@ -4,28 +4,35 @@ from copy import deepcopy
 
 class Buffer:
     _items: list
-    head: Item
 
     def __init__(self, items):
         self._items = items
-        self.head = items[0]
+        self.modulus = len(items) - 1
+        self.maxshift = (len(items) - 1) // 2
+        for self.zero in items:
+            if self.zero.value == 0:
+                break
+        else:
+            raise ValueError('no zero item')
 
     def __repr__(self):
+        """ Full representation including links """
         repr = ''
-        item = self.head
+        item = self.zero
         while True:
             repr += f'{item}\n'
             item = item.right
-            if item == self.head:
+            if item == self.zero:
                 return repr
 
     def __str__(self):
+        """ Abbreviated representation with just values """
         repr = ''
-        item = self.head
+        item = self.zero
         while True:
             repr += f'{item.value:4} '
             item = item.right
-            if item == self.head:
+            if item == self.zero:
                 return repr
 
     def __getitem__(self, index):
@@ -34,75 +41,85 @@ class Buffer:
     def __len__(self):
         return len(self._items)
 
-    def pos(self, value):
-        pos = 0
-        item = self.head
-        while True:
-            if item.value == value:
-                return pos
+    def walk_left(self, item, shift):
+        shift = shift % -len(self)
+        if shift:
+            if shift < -len(self) // 2:
+                # quicker to go the other way
+                return self.walk_right(item, shift + len(self))
             else:
-                pos += 1
-                item = item.right
-        else:
-            raise ValueError
+                # walk left
+                while shift:
+                    item = item.left
+                    shift += 1            
+        return item
 
-    def reduced_shift(self, shift):
-        if shift % len(self) == 0:
-            return 0
-        elif shift < 0:
-            alt_shift = (shift - 1) % len(self)
-        elif shift > 0:
-            alt_shift = (shift + 1) % -len(self)
+    def walk_right(self, item, shift):
+        shift = shift % len(self)
+        if shift:
+            if shift > len(self) // 2:
+                # quicker to go the other way
+                return self.walk_left(item, shift - len(self))
+            else:
+                # walk right
+                while shift:
+                    item = item.right
+                    shift -= 1
+        return item
 
-        if abs(alt_shift) < abs(shift):
-            # quicker to go the other way
-            return alt_shift
-        else:
-            return shift
+    def move_left(self, item, shift):
+        shift = shift % -self.modulus
+        if shift:
+            if shift < -self.modulus:
+                # quicker to go the other way
+                self.move_right(item, shift + self.modulus)
+            else:
+                # find insert position
+                insert_pos = item
+                while shift:
+                    insert_pos = insert_pos.left
+                    shift += 1
+
+                # unlink from current position
+                item.left.right = item.right
+                item.right.left = item.left
+
+                # relink to left of new position
+                item.right = insert_pos
+                item.left = insert_pos.left
+                insert_pos.left.right = item
+                insert_pos.left = item
+
+    def move_right(self, item, shift):
+        shift = shift % self.modulus
+        if shift:
+            if shift > self.maxshift:
+                # quicker to go the other way
+                self.move_left(item, shift - self.modulus)
+            else:
+                # find insert position
+                insert_pos = item
+
+                while shift:
+                    insert_pos = insert_pos.right
+                    shift -= 1
+
+                # unlink from current position
+                item.left.right = item.right
+                item.right.left = item.left
+
+                # relink to right of new position
+                item.left = insert_pos
+                item.right = insert_pos.right
+                insert_pos.right.left = item
+                insert_pos.right = item
 
     def move(self, item, shift):
-        # minimise number of steps
-        reduced_shift = self.reduced_shift(shift)
-        if reduced_shift:
-            # unlink at current position
-            item.left.right = item.right
-            item.right.left = item.left
-
-            if reduced_shift > 0:
-                #* >>>> MOVE ITEM RIGHT >>>>
-                new_pos = item
-                while reduced_shift > 0:
-                    # walk right
-                    new_pos = new_pos.right
-                    reduced_shift -= 1
-                # insert to the right of new_pos
-                if item == self.head:
-                    # moving the head to the right always creates a new head
-                    self.head = item.right
-                item.left = new_pos
-                item.right = new_pos.right
-                new_pos.right.left = item
-                new_pos.right = item
-
-            elif reduced_shift < 0:
-                #* <<<< MOVE ITEM LEFT <<<<
-                new_pos = item
-                while reduced_shift < 0:
-                    # walk left
-                    new_pos = new_pos.left
-                    reduced_shift += 1
-                # insert to the left of new_pos
-                if item == self.head:
-                    # moving the head to the left creates a new head
-                    self.head = item.right
-                #elif new_pos == self.head:
-                    # inserting to the left of head makes a new head
-                #    self.head = item
-                item.right = new_pos
-                item.left = new_pos.left
-                new_pos.left.right = item
-                new_pos.left = item
-
+        if shift > 0:
+            self.move_right(item, shift)
+        elif shift < 0:
+            self.move_left(item, shift)
+            
 
 @dataclass
 class Item:
@@ -133,44 +150,37 @@ def parse(stream):
     return Buffer(items)
 
 
-def part1(stream):
-    buffer = parse(stream)
-    #print('Initial arrangement:')
-    #print(buffer)
-    #print()
-    for index in range(len(buffer)):
-        item = buffer[index]
+def mix(buffer):
+    for item in buffer:
         buffer.move(item, item.value)
-        #print(f'{item} moves between {item.left} and {item.right}: ')
-        #print(buffer)
-        #print()
-    
-    # find the zero
-    for item in buffer._items:
-        if item.value == 0:
-            break
-    else:
-        raise ValueError
-    
+
+
+def score(buffer):
     score = 0
-    pos_shift = 1000 % len(buffer)  #! might be quicker to shift the other way
+    item = buffer.zero
     for _ in range(3):
-        shift = pos_shift
-        if shift > 0:
-            while shift:
-                item = item.right
-                shift -= 1
-        elif shift < 0:
-            while shift:
-                item = item.left
-                shift += 1
+        item = buffer.walk_right(item, 1000)
         score += item.value
-        print(item)
     return score
 
 
+def part1(stream):
+    buffer = parse(stream)
+    mix(buffer)
+    return score(buffer)
+
+
 def part2(stream):
-    pass
+    buffer = parse(stream)
+    for item in buffer:
+        item.value *= 811589153
+    print('\tmixing:', end=' ')
+    for step in range(10):
+        print(f'{step + 1}', end=' ')
+        mix(buffer)
+    print()
+    return score(buffer)
+
 
 
 def checkexamples():
@@ -179,9 +189,10 @@ def checkexamples():
         print(f'example1: {result}')
         assert result == 3
 
-    #with open('example.txt') as stream:
-    #    result = part2(stream)
-    #    assert result == 'xxxxx', result
+    with open('example.txt') as stream:
+        result = part2(stream)
+        print(f'example2: {result}')
+        assert result == 1623178306
 
 
 def main():
@@ -189,10 +200,11 @@ def main():
 
     with open('input.txt') as stream:
         result = part1(stream)
-        print('part1', result)
+        print(f'part1: {result}')
 
-    #with open('input.txt') as stream:
-    #    print('part2', part2(stream))
+    with open('input.txt') as stream:
+        result = part2(stream)
+        print(f'part2: {result}')
 
 
 if __name__ == '__main__':
