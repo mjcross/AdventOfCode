@@ -46,12 +46,22 @@ class Array2D:
 
         return repr
 
+    def as_chars(self):
+        repr = ''
+        for rowstart in range(0, len(self._array), self.width):
+            rowstr = ''
+            rowlist = self._array[rowstart: rowstart + self.width].tolist()
+            for element in rowlist:
+                rowstr += chr(element)
+            repr += rowstr + '\n'
+        return repr
     
+
 def main():
-    a2d = Array2D('B', 5, 9, 2, 5)
-    a2d[6, 3] = 1
-    assert a2d[6, 3] == 1
-    print(a2d)
+    a2d = Array2D('B', 5, 9, 2, 5, initialvalue=ord('x'))
+    a2d[6, 3] = ord('A')
+    assert a2d[6, 3] == ord('A')
+    print(a2d.as_chars())
 
 if __name__ == '__main__':
     main()
