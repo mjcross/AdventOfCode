@@ -1,4 +1,4 @@
-from array import array
+from array import array    
 
 class Array2D:
     def __init__(self, typecode='i', xmin=0, xmax=0, ymin=0, ymax=0, initialvalue=0):
