@@ -139,7 +139,6 @@ def part2(stream):
     return t
 
 
-
 def checkexamples():
     with open('example.txt') as stream:
         result = part1(stream)
