@@ -28,6 +28,7 @@ biggest_snafu = {
     num_digits: snafu_to_decimal(num_digits * '2') for num_digits in range(1, 50)
 }
 
+
 def decimal_to_snafu(num):
     # get the biggest column value needed
     for num_digits in range(1, 50):
