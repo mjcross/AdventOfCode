@@ -1,4 +1,4 @@
-from array import array    
+from array import array
 
 class Array2D:
     def __init__(self, typecode='i', xmin=0, xmax=0, ymin=0, ymax=0, initialvalue=0):
@@ -48,14 +48,14 @@ class Array2D:
 
     def as_chars(self):
         repr = ''
-        for rowstart in range(0, len(self._array), self.width):
+        for rowstart in reversed(range(0, len(self._array), self.width)):
             rowstr = ''
             rowlist = self._array[rowstart: rowstart + self.width].tolist()
             for element in rowlist:
                 rowstr += chr(element)
             repr += rowstr + '\n'
         return repr
-    
+
 
 def main():
     a2d = Array2D('B', 5, 9, 2, 5, initialvalue=ord('x'))
