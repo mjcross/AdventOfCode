@@ -73,6 +73,7 @@ class Mapping:
             mapped = overlap
         return (unmapped, mapped)
 
+
 @dataclass
 class Map:
     mappings: list[Mapping] = field(default_factory=list)
@@ -94,7 +95,7 @@ class Map:
                     unmappedSpans += unmapped
                 if mapped:
                     mappedSpans.append(mapped)
-            spans = unmappedSpans.copy()
+            spans = unmappedSpans
         return mappedSpans + unmappedSpans
 
 
