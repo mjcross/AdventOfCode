@@ -36,9 +36,8 @@ class Card:
     
 
 class Hand:
-    @property
-    def type(self):
-        c = [c[1] for c in self.counts.most_common(2)]
+    def evaluateType(self):
+        c = [c[1] for c in Counter(self._symbols).most_common(2)]
         if c[0] == 5:
             return Type.FiveOfAKind
         elif c[0] == 4:
@@ -55,24 +54,24 @@ class Hand:
             return Type.HighCard
 
     def __init__(self, symbols):
-        self.cards = [Card(symbol) for symbol in symbols]
-        self.symbols = symbols
-        self.counts = Counter(self)
+        self._cards = [Card(symbol) for symbol in symbols]
+        self._symbols = symbols
+        self._type = self.evaluateType()
 
     def __getitem__(self, index):
-        return self.cards[index]
+        return self._cards[index]
 
     def __repr__(self):
-        return self.symbols
+        return self._symbols
     
     def __gt__(self, other):
-        if self.type.value > other.type.value:
+        if self._type.value > other._type.value:
             return True
-        elif self.type.value < other.type.value:
+        elif self._type.value < other._type.value:
             return False
         
         # compare hands of same type
-        for selfCard, otherCard in zip(self.cards, other.cards):
+        for selfCard, otherCard in zip(self._cards, other._cards):
             if selfCard > otherCard:
                 return True
             elif otherCard > selfCard:
@@ -85,20 +84,20 @@ class WildCard(Card):
     ranks = list('J') + [str(n) for n in range(2, 10)] + list('TQKA')
 
 
-class WildHand:
+class WildHand(Hand):
 
-    def wildType(self):
+    def evaluateType(self):
         # replace Jacks with most common OTHER card
-        counts = Counter(self.symbols).most_common(2)
+        counts = Counter(self._symbols).most_common(2)
         if counts[0][0] != 'J':
-            wildSymbols = self.symbols.replace('J', counts[0][0])
+            wildSymbols = self._symbols.replace('J', counts[0][0])
         else:
             # most common card is Jack, choose next most common
             try:
-                wildSymbols = self.symbols.replace('J', counts[1][0])    
+                wildSymbols = self._symbols.replace('J', counts[1][0])    
             except(IndexError):
                 # hand is 5 jacks so just leave alone
-                wildSymbols = self.symbols
+                wildSymbols = self._symbols
         # evaluate hand type with Jacks replaced
         counts = Counter(wildSymbols)
         c = [c[1] for c in counts.most_common(2)]
@@ -117,30 +116,9 @@ class WildHand:
         return Type.HighCard
     
     def __init__(self, symbols):
-        self.cards = [WildCard(symbol) for symbol in symbols]
-        self.symbols = symbols
-        self.type = self.wildType()
-
-    def __getitem__(self, index):
-        return self.cards[index]
-
-    def __repr__(self):
-        return self.symbols
-    
-    def __gt__(self, other):
-        if self.type.value > other.type.value:
-            return True
-        elif self.type.value < other.type.value:
-            return False
-        
-        # compare hands of same type
-        for selfCard, otherCard in zip(self.cards, other.cards):
-            if selfCard > otherCard:
-                return True
-            elif otherCard > selfCard:
-                return False
-        else:
-            return False
+        self._cards = [WildCard(symbol) for symbol in symbols]
+        self._symbols = symbols
+        self._type = self.evaluateType()
 
 
 def main():
