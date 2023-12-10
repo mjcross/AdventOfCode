@@ -85,7 +85,6 @@ class WildCard(Card):
 
 
 class WildHand(Hand):
-
     def evaluateType(self):
         # replace Jacks with most common OTHER card
         counts = Counter(self._symbols).most_common(2)
