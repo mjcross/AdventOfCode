@@ -1,9 +1,8 @@
 from tree import Node, Tree
-from itertools import cycle
 
 def parse(stream):
     # first line is the path to be taken (repeats)
-    path = cycle(stream.readline().strip())
+    turnSeq = stream.readline().strip()
 
     # next line is blank
     stream.readline()
@@ -44,4 +43,4 @@ def parse(stream):
                 tree.endNodes.append(node)
             node.isEndNode = True
 
-    return path, tree
+    return turnSeq, tree
