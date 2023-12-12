@@ -31,7 +31,7 @@ class Grid:
 
     def __str__(self):
         return '\n'.join(
-            [' '.join(list(map(chr, self._array[y * self.width: (y+1) * self.width])))
+            [''.join(list(map(chr, self._array[y * self.width: (y+1) * self.width])))
             for y in range(self.height)])
     
 
