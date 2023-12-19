@@ -1,10 +1,5 @@
 from dataclasses import dataclass
 
-
-def binStr(x: int, nBits: int) -> str:
-    """ Returns the string representation of a binary number padded with leading zeroes. """
-    return f'{x:0{nBits}b}'
-
 nBits = [2**n - 1 for n in range(200)]
 
 
@@ -84,23 +79,4 @@ class Puzzle:
         return self._placeGroup(0, len(self.groups) - 1, 0, {})
 
     def unfold(self, mult):
-        return Puzzle('?'.join(mult * [self.pattern]), mult * self.groups)
-    
-
-def main():
-    # check we get the same number of leftwards and rightwards arrangements
-    p = Puzzle('?#?#?#????????.', [8, 1])
-    print(p.pattern)
-
-    rightLen = p.arrangementLengthsRight(len(p), fullCheck=True)
-    print(f'{rightLen} = {sum(rightLen.values())}')
-
-    leftLen = p.arrangementLengthsLeft(len(p), fullCheck=True)
-    print(f'{leftLen} = {sum(leftLen.values())}')
-
-    assert sum(rightLen.values()) == sum(leftLen.values())
-
-    print(p.nArrangements())
-
-if __name__ == '__main__':
-    main()
+        return Puzzle('?'.join(mult * [self.pattern]), mult * self.groups)   
