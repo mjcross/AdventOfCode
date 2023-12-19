@@ -14,21 +14,16 @@ def parse(stream) -> list[Puzzle]:
 def part1(stream):
     total = 0
     for p in parse(stream):
-        # should get the same totals by feeding groups in from the right and the left
-        rightLen = p.arrangementLengthsRight(len(p), fullCheck=True)
-        leftLen = p.arrangementLengthsLeft(len(p), fullCheck=True)
-        assert sum(rightLen.values()) == sum(leftLen.values())
-        # print(f'{p.pattern:20}\t{rightLen} = {sum(rightLen.values())}\t{leftLen} = {sum(leftLen.values())}')
         total += p.nArrangements()
     return total
 
 
 def part2(stream):
+    total = 0
     for puzzle in parse(stream):
         p = puzzle.unfold(5)
-
-
-
+        total += p.nArrangements()
+    return total
 
 
 def checkexamples():
@@ -37,10 +32,10 @@ def checkexamples():
         print(f'example1: {result}')
         assert result == 21, result
 
-    #with open('example.txt') as stream:
-    #    result = part2(stream)
-    #    print(f'example2: {result}')
-    #    assert result == 'xxxxx', result
+    with open('example.txt') as stream:
+        result = part2(stream)
+        print(f'example2: {result}')
+        assert result == 525152, result
 
 
 def main():

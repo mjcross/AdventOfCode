@@ -35,7 +35,18 @@ class Puzzle:
         s += f'\nclr: {binStr(self.clrBits, len(self))} '
         return s
 
-    def _placeGroup(self, x, groupNum, start) -> int:
+    def _placeGroup(self, x, groupNum, start, cache) -> int:
+        """
+        Finds all the valid placings of group[groupNum], starting at pattern
+        index 'start', and then recursively places the remaining groups and 
+        returns the total number of valid arrangements that can be reached
+        from this starting point.
+        """
+
+        #! check cache
+        if (groupNum, start) in cache:
+            return cache[(groupNum, start)]
+
         nValid = 0
         sz = self.groups[groupNum]
         minLeft = sum(self.groups[:groupNum]) + groupNum + 1
@@ -57,11 +68,20 @@ class Puzzle:
                     nValid += 1
                 else:
                     # place next group
-                    nValid += self._placeGroup(x=tryX, groupNum=groupNum - 1, start=shift + sz + 1)
+                    nFollowing = self._placeGroup(
+                        x=tryX, 
+                        groupNum=groupNum - 1, 
+                        start=shift + sz + 1, 
+                        cache=cache)
+                    nValid += nFollowing
+
+        #! save result in cache
+        cache[(groupNum, start)] = nValid
+
         return nValid
     
     def nArrangements(self) -> int:
-        return self._placeGroup(0, len(self.groups) - 1, 0)
+        return self._placeGroup(0, len(self.groups) - 1, 0, {})
 
     def unfold(self, mult):
         return Puzzle('?'.join(mult * [self.pattern]), mult * self.groups)
