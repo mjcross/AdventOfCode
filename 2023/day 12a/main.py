@@ -1,7 +1,7 @@
 from puzzle import Puzzle
 
 
-def parse(stream):
+def parse(stream) -> list[Puzzle]:
     puzzles = []
     for rawline in stream:
         line = rawline.strip()
@@ -19,22 +19,16 @@ def part1(stream):
         leftLen = p.arrangementLengthsLeft(len(p), fullCheck=True)
         assert sum(rightLen.values()) == sum(leftLen.values())
         # print(f'{p.pattern:20}\t{rightLen} = {sum(rightLen.values())}\t{leftLen} = {sum(leftLen.values())}')
-        total += sum(rightLen.values())
+        total += p.nArrangements()
     return total
 
 
 def part2(stream):
-    for p in parse(stream):
-        # find the most compact leftwards arrangement for the 2x puzzle
-        p2 = p.unfold(2)
-        min2 = min(p2.arrangementLengthsLeft(len(p2)))
-        print(min2, '/', len(p2))
+    for puzzle in parse(stream):
+        p = puzzle.unfold(5)
 
-        #! NB: arrangement lengths don't include the zero
-        #!     that must appear between the LH and RH sides.
-        #!     So as well as everything else, the sequences
-        #!     cannot meet on a '#' (but this should be taken
-        #!     into account by the extra mask bit check)
+
+
 
 
 def checkexamples():
