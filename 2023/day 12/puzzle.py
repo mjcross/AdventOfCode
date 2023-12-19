@@ -2,6 +2,10 @@ from dataclasses import dataclass
 
 nBits = [2**n - 1 for n in range(200)]
 
+def binStr(x: int, nBits: int) -> str:
+    """ Returns the string representation of a binary number padded with leading zeroes. """
+    return f'{x:0{nBits}b}'
+
 
 @dataclass
 class Puzzle:
