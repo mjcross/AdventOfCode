@@ -1,9 +1,23 @@
 from array import array
 
+def gridFromstream(stream):
+    # find dimensions of grid
+    width = len(stream.readline().strip('\n'))
+
+    height = 1
+    while stream.readline():
+        height += 1
+
+    # rewind stream and initialise grid
+    stream.seek(0)
+    return Grid(width, height, [line.strip('\n') for line in stream])
+
+
 class Grid:
-    """Efficient storage of 2D character data using an Array.
-       Instances are intended to be easy to initialise from
-       an iterable (e.g. text file data)."""
+    """
+    Efficient storage of 2D character data using an Array.
+    To initialise from a stream use 'gridFromStream()', above.
+    """
     def indexToCoord(self, index):
         x = index % self.width
         y = (self.height - 1) - index // self.width
@@ -37,6 +51,9 @@ class Grid:
         else:
             self._array = array('B', map(ord, ''.join(initialiser)))
 
+    def __hash__(self):
+        return hash(tuple(self._array))
+
     def __getitem__(self, coord):
         return chr(self._array[self.coordToIndex(coord)])
 
@@ -46,7 +63,7 @@ class Grid:
     def __str__(self):
         return '\n'.join(
             [''.join(list(map(chr, self._array[y * self.width: (y+1) * self.width])))
-            for y in range(self.height)])
+            for y in range(self.height)]) + '\n'
 
 
 class ListGrid(Grid):
