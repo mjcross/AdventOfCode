@@ -25,8 +25,8 @@ class Grid:
 
     def coordToIndex(self, coord):
         x, y = coord
-        if x < 0 or x >= self.width:
-            raise ValueError
+        if x < 0 or x >= self.width or y < 0 or y >= self.height:
+            raise IndexError
         return x + self.width * (self.height - 1 - y)
     
     def find(self, c):
