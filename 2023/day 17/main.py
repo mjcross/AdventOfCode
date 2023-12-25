@@ -36,7 +36,7 @@ class Head:
     def score(self):
         # average cost per step is 5
         d = (self.wayOut[0] - self.x) + self.y
-        return self.cost + 5 * d
+        return self.straightCount + 3 * (self.cost + 5 * d)
     
     def __eq__(self, other):
         return self.score == other.score
@@ -109,49 +109,44 @@ def readIntGrid(stream):
 def part1(stream):
     grid = readIntGrid(stream)
     wayOut = (grid.width - 1, 0)
-    numLookAhead = 14   # number of moves to look ahead for each position
+    maxHeads = 50_000
 
     best = IntGrid(grid.width, grid.height)
     
-    head = Head(
+    heads = [Head(
         x=0, y=grid.height - 1,
         straightCount=0,
         dir=Dir.E,
         cost=0,
         wayOut=wayOut,
-        grid=grid)
+        grid=grid)]
     
-    while (head.x, head.y) != wayOut:
-        # find the next steps from this head
-        #todo: we may need to follow several heads until we reach maxHeads
-        nextHeads = head.nextHeads()
+    costs = []
+    while heads:
+        nextHeads = []
 
-        # score the next steps by looking ahead
-        scores = []
-        for h in nextHeads:
+        for head in heads:
+            if (head.x, head.y) == wayOut:
+                costs.append(head.cost)
+                print(f'\t{head.cost}')
+            else:
+                neighbours = head.nextHeads()
+                for h in neighbours:
+                    if best[h.x, h.y] == 0 or h.score < best[h.x, h.y] + 4:
+                        if best[h.x, h.y] == 0 or h.score < best[h.x, h.y]:
+                            best[h.x, h.y] = h.score
+                        nextHeads.append(h)
 
-            # identify the places we can reach from this next step
-            lookAheads = [h]
-            for stepNum in range(numLookAhead):
-                nextLookAheads = []
-                for h in lookAheads:
-                    nextLookAheads += h.nextHeads()
-                lookAheads = nextLookAheads
-            
-            # find the lowest cost place
-            bestScore = min(lookAheads).score
+        if len(nextHeads) >= maxHeads:
+            nextHeads.sort()
+            heads = nextHeads[:maxHeads//2]
+            print(best)
+        else:
+            heads = nextHeads
 
-            scores.append(bestScore)
-        
-        # go the most promising way
-        bestScore = min(scores)
-        head = nextHeads[scores.index(bestScore)]
+    return min(costs)
 
-        best[head.x, head.y] = head.cost
-        print(best)
-        pass
 
-    return head.cost
 
 
 
@@ -164,7 +159,7 @@ def checkexamples():
     with open('example.txt') as stream:
         result = part1(stream)
         print(f'example1: {result}')
-    #    assert result == 'xxxxx', result
+        assert result == 102, result
 
     #with open('example.txt') as stream:
     #    result = part2(stream)
