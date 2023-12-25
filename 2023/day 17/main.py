@@ -1,7 +1,6 @@
 from grid import IntGrid
 from enum import Enum
 from dataclasses import dataclass
-from copy import deepcopy
 
 class Dir(Enum):
     N = (0, 1)
@@ -110,7 +109,7 @@ def readIntGrid(stream):
 def part1(stream):
     grid = readIntGrid(stream)
     wayOut = (grid.width - 1, 0)
-    numLookAhead = 13   # number of moves to look ahead for each position
+    numLookAhead = 14   # number of moves to look ahead for each position
 
     best = IntGrid(grid.width, grid.height)
     
