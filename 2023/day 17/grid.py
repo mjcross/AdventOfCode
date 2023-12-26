@@ -101,7 +101,7 @@ class IntGrid(Grid):
         
     def __str__(self):
         m = max(self._array)
-        l = len(str(m))
+        l = max(3, len(str(m)))
         s = ''
         for y in reversed(range(self.height)):
             row = (' ').join([f'{self[x, y]:{l}}' for x in range(self.width)])

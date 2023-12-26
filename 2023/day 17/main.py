@@ -1,12 +1,12 @@
 from grid import IntGrid
-from enum import Enum
+from enum import IntEnum
 from dataclasses import dataclass
 
-class Dir(Enum):
-    N = (0, 1)
-    E = (1, 0)
-    S = (0, -1)
-    W = (-1, 0)
+class Dir(IntEnum):
+    N = 0
+    E = 1
+    S = 2
+    W = 3
 
     @property
     def recip(self):
@@ -20,6 +20,19 @@ class Dir(Enum):
             return Dir.E
         else:
             raise ValueError
+        
+    @property
+    def move(self):
+        if self is Dir.N:
+            return (0, 1)
+        elif self is Dir.E:
+            return (1, 0)
+        elif self is Dir.S:
+            return (0, -1)
+        elif self is Dir.W:
+            return (-1, 0)
+        else:
+            raise ValueError
 
 
 @dataclass
@@ -31,11 +44,12 @@ class Head:
     cost: int
     wayOut: tuple
     grid: IntGrid
+    path: list[(int, int)]
 
     @property
     def score(self):
         # average cost per step is 5
-        #d = (self.wayOut[0] - self.x) + self.y
+        # d = (self.wayOut[0] - self.x) + self.y
         return self.cost
         #return self.cost + 5 * d
     
@@ -71,7 +85,7 @@ class Head:
                 # we turned left or right
                 straightCount = 1
 
-            dx, dy = dir.value
+            dx, dy = dir.move
             x = self.x + dx
             y = self.y + dy
             
@@ -81,6 +95,8 @@ class Head:
                 # went off the edge of the grid
                 continue
 
+            nextPath = self.path.copy()
+            nextPath.append((x, y))
             nextHeads.append(Head(
                 x=x,
                 y=y,
@@ -88,7 +104,8 @@ class Head:
                 dir=dir,
                 cost=cost,
                 wayOut=self.wayOut,
-                grid=self.grid
+                grid=self.grid,
+                path=nextPath
             ))
 
         return nextHeads
@@ -114,11 +131,11 @@ def part1(stream):
 
     cost = IntGrid(grid.width, grid.height)
 
-    # separate score tables for each straightCount
-    scores = [IntGrid(grid.width, grid.height),
-              IntGrid(grid.width, grid.height),
-              IntGrid(grid.width, grid.height),
-              IntGrid(grid.width, grid.height)]
+    # separate score tables for each straightCount and direction
+    scores = [0,
+              [IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height)], 
+              [IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height)],
+              [IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height)]]
     
     heads = [Head(
         x=0, y=grid.height - 1,
@@ -126,34 +143,43 @@ def part1(stream):
         dir=Dir.E,
         cost=0,
         wayOut=wayOut,
-        grid=grid)]
+        grid=grid,
+        path=[(0, grid.height - 1)])]
     
-    finalCosts = set()
+    finalCosts = []
     while heads:
         nextHeads = {}
 
         for head in heads:
             if (head.x, head.y) == wayOut:
-                finalCosts.add(head.cost)
-        
-            neighbours = head.nextHeads()
-            for h in neighbours:
-                if (h.x, h.y) == wayOut:
-                    finalCosts.add(h.cost)
-                elif scores[h.straightCount][h.x, h.y] == 0 or h.score < scores[h.straightCount][h.x, h.y]:
-                        # replace inferior-scoring head with the same straightCount
-                        nextHeads[h.x, h.y, h.straightCount] = h
-                        scores[h.straightCount][h.x, h.y] = h.score
-                        cost[h.x, h.y] = h.cost
+                finalCosts.add(head)
+            
+            else:            
+                neighbours = head.nextHeads()
+                for h in neighbours:
+                    if (h.x, h.y) == wayOut:
+                        finalCosts.append(h)
+                    elif scores[h.straightCount][h.dir][h.x, h.y] == 0 or h.score < scores[h.straightCount][h.dir][h.x, h.y]:
+                            # replace inferior-scoring head with the same straightCount
+                            nextHeads[h.x, h.y, h.dir, h.straightCount] = h
+                            scores[h.straightCount][h.dir][h.x, h.y] = h.score
+                            cost[h.x, h.y] = h.cost
 
         #print(cost)
-        print(len(nextHeads), finalCosts)
+        print(len(nextHeads))
         heads = nextHeads.values()
 
-    return min(finalCosts)
+    bestCost = min(finalCosts)
+    path = bestCost.path
+    best = IntGrid(grid.width, grid.height)
+    cost = 0
+    for x, y in path[1:]:
+        cost += grid[x, y]
+        best[x, y] = cost
 
+    print(best)
 
-
+    return bestCost.cost
 
 
 
@@ -174,7 +200,7 @@ def checkexamples():
 
 
 def main():
-    #checkexamples()
+    checkexamples()
 
     with open('input.txt') as stream:
         result = part1(stream)
