@@ -110,6 +110,63 @@ class Head:
 
         return nextHeads
 
+    def nextHeadsUltra(self):
+        nextHeads = []
+
+        # if we are at the exit then this must be our 4th step in the same
+        # direction or we can't stop!
+        if (self.x, self.y) == self.wayOut:
+            if self.straightCount == 3:
+                return [self]
+            else:
+                return []
+
+        # all possible directions from this head
+        for dir in Dir:
+            if dir is self.dir.recip:
+                # can't turn 180 degrees
+                continue
+
+            if dir == self.dir:
+                if self.straightCount >= 10:
+                    # can't move more than ten steps in the same direction
+                    continue
+                else:
+                    straightCount = self.straightCount + 1
+            else:
+                # we are attempting to turn...
+                # but this is not permitted until having gone at least 
+                # four steps in the same direction
+                if self.straightCount <= 3:
+                    continue
+                else:
+                    straightCount = 1
+
+            dx, dy = dir.move
+            x = self.x + dx
+            y = self.y + dy
+            
+            try:
+                cost = self.cost + self.grid[x, y]
+            except IndexError:
+                # went off the edge of the grid
+                continue
+
+            nextPath = self.path.copy()
+            nextPath.append((x, y))
+            nextHeads.append(Head(
+                x=x,
+                y=y,
+                straightCount=straightCount,
+                dir=dir,
+                cost=cost,
+                wayOut=self.wayOut,
+                grid=self.grid,
+                path=nextPath
+            ))
+
+        return nextHeads
+
 
 def readIntGrid(stream):
     # find dimensions of grid
@@ -184,7 +241,68 @@ def part1(stream):
 
 
 def part2(stream):
-    pass
+    grid = readIntGrid(stream)
+    wayOut = (grid.width - 1, 0)
+    maxHeads = 150_000
+
+    cost = IntGrid(grid.width, grid.height)
+
+    # separate score tables for each straightCount and direction
+    scores = [0,
+              [IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height)], 
+              [IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height)],
+              [IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height)],
+              [IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height)],
+              [IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height)],
+              [IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height)],
+              [IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height)],
+              [IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height)],
+              [IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height)],
+              [IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height), IntGrid(grid.width, grid.height)]]
+    
+    heads = [Head(
+        x=0, y=grid.height - 1,
+        straightCount=0,
+        dir=Dir.E,
+        cost=0,
+        wayOut=wayOut,
+        grid=grid,
+        path=[(0, grid.height - 1)])]
+    
+    finalCosts = []
+    while heads:
+        nextHeads = {}
+
+        for head in heads:
+            if (head.x, head.y) == wayOut:
+                finalCosts.add(head)
+            
+            else:            
+                neighbours = head.nextHeadsUltra()
+                for h in neighbours:
+                    if (h.x, h.y) == wayOut:
+                        finalCosts.append(h)
+                    elif scores[h.straightCount][h.dir][h.x, h.y] == 0 or h.score < scores[h.straightCount][h.dir][h.x, h.y]:
+                            # replace inferior-scoring head with the same straightCount
+                            nextHeads[h.x, h.y, h.dir, h.straightCount] = h
+                            scores[h.straightCount][h.dir][h.x, h.y] = h.score
+                            cost[h.x, h.y] = h.cost
+
+        #print(cost)
+        print(len(nextHeads))
+        heads = nextHeads.values()
+
+    bestCost = min(finalCosts)
+    path = bestCost.path
+    best = IntGrid(grid.width, grid.height)
+    cost = 0
+    for x, y in path[1:]:
+        cost += grid[x, y]
+        best[x, y] = cost
+
+    print(best)
+
+    return bestCost.cost
 
 
 def checkexamples():
@@ -193,10 +311,10 @@ def checkexamples():
         print(f'example1: {result}')
         assert result == 102, result
 
-    #with open('example.txt') as stream:
-    #    result = part2(stream)
-    #    print(f'example2: {result}')
-    #    assert result == 'xxxxx', result
+    with open('example.txt') as stream:
+        result = part2(stream)
+        print(f'example2: {result}')
+        assert result == 94, result
 
 
 def main():
@@ -206,9 +324,9 @@ def main():
         result = part1(stream)
         print(f'part1 {result}')
 
-    #with open('input.txt') as stream:
-    #    result = part2(stream)
-    #    print(f'part2 {result}')
+    with open('input.txt') as stream:
+        result = part2(stream)
+        print(f'part2 {result}')
 
 
 if __name__ == '__main__':
