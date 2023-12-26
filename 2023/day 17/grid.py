@@ -104,7 +104,7 @@ class IntGrid(Grid):
         l = len(str(m))
         s = ''
         for y in reversed(range(self.height)):
-            row = (', ').join([f'{self[x, y]:{l}}' for x in range(self.width)])
+            row = (' ').join([f'{self[x, y]:{l}}' for x in range(self.width)])
             s += row + '\n'
         return s
 

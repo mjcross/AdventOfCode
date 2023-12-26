@@ -35,8 +35,9 @@ class Head:
     @property
     def score(self):
         # average cost per step is 5
-        d = (self.wayOut[0] - self.x) + self.y
-        return self.straightCount + 3 * (self.cost + 5 * d)
+        #d = (self.wayOut[0] - self.x) + self.y
+        return self.cost
+        #return self.cost + 5 * d
     
     def __eq__(self, other):
         return self.score == other.score
@@ -109,9 +110,15 @@ def readIntGrid(stream):
 def part1(stream):
     grid = readIntGrid(stream)
     wayOut = (grid.width - 1, 0)
-    maxHeads = 50_000
+    maxHeads = 150_000
 
-    best = IntGrid(grid.width, grid.height)
+    cost = IntGrid(grid.width, grid.height)
+
+    # separate score tables for each straightCount
+    scores = [IntGrid(grid.width, grid.height),
+              IntGrid(grid.width, grid.height),
+              IntGrid(grid.width, grid.height),
+              IntGrid(grid.width, grid.height)]
     
     heads = [Head(
         x=0, y=grid.height - 1,
@@ -121,30 +128,29 @@ def part1(stream):
         wayOut=wayOut,
         grid=grid)]
     
-    costs = []
+    finalCosts = set()
     while heads:
-        nextHeads = []
+        nextHeads = {}
 
         for head in heads:
             if (head.x, head.y) == wayOut:
-                costs.append(head.cost)
-                print(f'\t{head.cost}')
-            else:
-                neighbours = head.nextHeads()
-                for h in neighbours:
-                    if best[h.x, h.y] == 0 or h.score < best[h.x, h.y] + 4:
-                        if best[h.x, h.y] == 0 or h.score < best[h.x, h.y]:
-                            best[h.x, h.y] = h.score
-                        nextHeads.append(h)
+                finalCosts.add(head.cost)
+        
+            neighbours = head.nextHeads()
+            for h in neighbours:
+                if (h.x, h.y) == wayOut:
+                    finalCosts.add(h.cost)
+                elif scores[h.straightCount][h.x, h.y] == 0 or h.score < scores[h.straightCount][h.x, h.y]:
+                        # replace inferior-scoring head with the same straightCount
+                        nextHeads[h.x, h.y, h.straightCount] = h
+                        scores[h.straightCount][h.x, h.y] = h.score
+                        cost[h.x, h.y] = h.cost
 
-        if len(nextHeads) >= maxHeads:
-            nextHeads.sort()
-            heads = nextHeads[:maxHeads//2]
-            print(best)
-        else:
-            heads = nextHeads
+        #print(cost)
+        print(len(nextHeads), finalCosts)
+        heads = nextHeads.values()
 
-    return min(costs)
+    return min(finalCosts)
 
 
 
@@ -168,7 +174,7 @@ def checkexamples():
 
 
 def main():
-    checkexamples()
+    #checkexamples()
 
     with open('input.txt') as stream:
         result = part1(stream)
