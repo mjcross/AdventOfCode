@@ -128,7 +128,7 @@ class Grid:
                     prevEmptyBelow = False
 
                 x -= 1
-
+                
 
 class IntGrid(Grid):
     """

@@ -184,7 +184,6 @@ def readIntGrid(stream):
 def part1(stream):
     grid = readIntGrid(stream)
     wayOut = (grid.width - 1, 0)
-    maxHeads = 150_000
 
     cost = IntGrid(grid.width, grid.height)
 
