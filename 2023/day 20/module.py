@@ -26,7 +26,7 @@ class Broadcaster:
     
 
 @dataclass
-class flipflop:
+class Flipflop:
     name: str
     destinations: list[str]
 
@@ -79,15 +79,15 @@ def parse(stream):
         specs.append(Spec(prefix, name, dests))
 
     # second pass to create modules
-    modules = []
+    modules = {}
     for spec in specs:
         if spec.prefix == 'B':
-            modules.append(Broadcaster(spec.name, spec.dests))
+            modules[spec.name] = Broadcaster(spec.name, spec.dests)
         elif spec.prefix == '%':
-            modules.append(flipflop(spec.name, spec.dests))
+            modules[spec.name] = Flipflop(spec.name, spec.dests)
         elif spec.prefix == '&':
             sources = [s.name for s in specs if spec.name in s.dests]
-            modules.append(Conjunction(spec.name, spec.dests, sources))
+            modules[spec.name] = Conjunction(spec.name, spec.dests, sources)
         else:
             raise ValueError
         

@@ -1,4 +1,15 @@
 from module import parse, Pulse
+from math import lcm
+
+def getOutputs(inputs, modules):
+    outputs = []
+    for pulse in inputs:
+        for module in modules.values():
+            output = module.output(pulse)
+            if output:
+                outputs.append(output)
+    return outputs
+
 
 def part1(stream, nButtonPushes):
     modules = parse(stream)
@@ -7,7 +18,7 @@ def part1(stream, nButtonPushes):
     nHighPulses = 0
     t = 0
 
-    # push the button four times
+    # push the button the required number of times
     for _ in range(nButtonPushes):
         # send a 'LOW' pulse to the broadcaster
         inputs = [Pulse(t, False, 'button', ['broadcaster'])]
@@ -23,45 +34,35 @@ def part1(stream, nButtonPushes):
                     nLowPulses += len(pulse.destinations)
 
             # collect ouput pulses
-            outputs = []
-            t += 1
-            for pulse in inputs:
-                for module in modules:
-                    output = module.output(pulse)
-                    if output:
-                        outputs.append(output)
-            inputs = outputs
+            inputs = getOutputs(inputs, modules)
 
     return nLowPulses * nHighPulses
 
 
-def part2(stream, nButtonPushes):
+def part2(stream, maxPeriod):
     modules = parse(stream)
 
+    # find periods of inputs to the final conjunction module
     t = 0
+    final = modules['mg']
+    finalInputs = final.sources
+    period = {fi: None for fi in finalInputs}
 
-    # push the button four times
-    for buttonPressNum in range(nButtonPushes):
-        # send a 'LOW' pulse to the broadcaster
+    for nPresses in range(1, maxPeriod):
         inputs = [Pulse(t, False, 'button', ['broadcaster'])]
 
-        # let everything stabilise
         while inputs:
-            
-            for pulse in inputs:
-                if pulse.level == False and 'rx' in pulse.destinations:
-                    return buttonPressNum
-
-            # collect ouput pulses
-            outputs = []
             t += 1
-            for pulse in inputs:
-                for module in modules:
-                    output = module.output(pulse)
-                    if output:
-                        outputs.append(output)
-            inputs = outputs
+            inputs = getOutputs(inputs, modules)
 
+            # check whether any of the final inputs went high
+            if True in final.inputState.values():
+                for fi in finalInputs:
+                    if final.inputState[fi] == True and period[fi] is None:
+                        print(f'\tperiod of {fi} is {nPresses}')
+                        period[fi] = nPresses
+
+    return lcm(*period.values())
 
 
 def checkexamples():
@@ -80,11 +81,11 @@ def main():
     checkexamples()
 
     with open('input.txt') as stream:
-        result = part1(stream, nButtonPushes=1000)
+        result = part1(stream, nButtonPushes=1_000)
         print(f'part1 {result}')
 
     with open('input.txt') as stream:
-        result = part2(stream, 1000000)
+        result = part2(stream, maxPeriod=10_000)
         print(f'part2 {result}')
 
 
