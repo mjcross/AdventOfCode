@@ -12,43 +12,47 @@ class Point2D:
         return f'{self.x}, {self.y}'
 
 def part1(stream):
-    bricks = sorted(parse(stream))
+    bricks = parse(stream)
 
     xMax = max([brick.max.x for brick in bricks])
     yMax = max([brick.max.y for brick in bricks])
+    zMax = max([brick.min.z for brick in bricks])
     ground = Brick(None, (0, 0, 0), (xMax, yMax, 0))
     xyBricks = ListGrid(xMax + 1, yMax + 1, (xMax + 1)*(yMax + 1)*[ground])
 
-    for brick in bricks:
-        brick.supportedByIndices = {None}
+    for z in range(zMax + 1):
 
-        # find highest point(s) under brick
-        zMax = 0
-        for x in range(brick.min.x, brick.max.x + 1):
-            for y in range(brick.min.y, brick.max.y + 1):
-                xyBrick = xyBricks[x, y]
-                if xyBrick.max.z > zMax:
-                    zMax = xyBrick.max.z
-                    brick.supportedByIndices = {xyBrick.index}
-                elif xyBrick.max.z == zMax:
-                    brick.supportedByIndices.add(xyBrick.index)
+        for brick in bricks:
+            if brick.min.z == z:
+                brick.supportedByIndices = {None}
 
-        # place brick
-        deltaZ = zMax - brick.min.z + 1
-        brick.min.z += deltaZ
-        brick.max.z += deltaZ
+                # find highest point(s) under brick
+                zMax = 0
+                for x in range(brick.min.x, brick.max.x + 1):
+                    for y in range(brick.min.y, brick.max.y + 1):
+                        xyBrick = xyBricks[x, y]
+                        if xyBrick.max.z > zMax:
+                            zMax = xyBrick.max.z
+                            brick.supportedByIndices = {xyBrick.index}
+                        elif xyBrick.max.z == zMax:
+                            brick.supportedByIndices.add(xyBrick.index)
 
-        # update highest points on grid
-        for x in range(brick.min.x, brick.max.x + 1):
-            for y in range(brick.min.y, brick.max.y + 1):
-                xyBricks[x, y] = brick
+                # place brick
+                deltaZ = zMax - brick.min.z + 1
+                brick.min.z += deltaZ
+                brick.max.z += deltaZ
 
-        # update supporing bricks to show that they support this brick
-        for i in brick.supportedByIndices:
-            if i is not None:
-                bricks[i].supportsIndices.add(brick.index)
+                # update highest points on grid
+                for x in range(brick.min.x, brick.max.x + 1):
+                    for y in range(brick.min.y, brick.max.y + 1):
+                        xyBricks[x, y] = brick
 
-        print('placed:', brick)
+                # update supporing bricks to show that they support this brick
+                for i in brick.supportedByIndices:
+                    if i is not None:
+                        bricks[i].supportsIndices.add(brick.index)
+
+                print('placed:', brick)
 
     print()
     for brick in bricks:
