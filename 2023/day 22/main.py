@@ -1,17 +1,8 @@
 from parse import parse, Brick
 from grid import ListGrid
-from dataclasses import dataclass
+from sys import setrecursionlimit
 
-
-@dataclass
-class Point2D:
-    x: int
-    y: int
-
-    def __str__(self):
-        return f'{self.x}, {self.y}'
-
-def part1(stream):
+def makeStack(stream):
     bricks = parse(stream)
 
     xMax = max([brick.max.x for brick in bricks])
@@ -49,12 +40,11 @@ def part1(stream):
             if i is not None:
                 bricks[i].supportsIndices.add(brick.index)
 
-        #print('placed:', brick)
+    return bricks
 
-    #print()
-    #for brick in bricks:
-    #    print('Brick', brick.index, 'supports', brick.supportsIndices, 'supportedBy', brick.supportedByIndices)
 
+def part1(stream):
+    bricks = makeStack(stream)
     removableBricks = set(brick.index for brick in bricks)
     for brick in bricks:
         if len(brick.supportedByIndices) == 1:
@@ -65,8 +55,26 @@ def part1(stream):
     return len(removableBricks)
 
 
+def willFall(fallenBricks, bricks):
+    for brick in bricks:
+        if brick.index not in fallenBricks:
+            for index in brick.supportedByIndices:
+                if index not in fallenBricks:
+                    break
+            else:
+                # all supporters are fallers - this brick will now fall
+                fallenBricks.add(brick.index)
+                willFall(fallenBricks, bricks)
+    return fallenBricks
+
+
 def part2(stream):
-    pass
+    bricks = makeStack(stream)
+    setrecursionlimit(len(bricks)+100)
+    total = 0
+    for brick in bricks:
+        total += len(willFall({brick.index}, bricks)) - 1    # don't count the disintegrated brick
+    return total
 
 
 def checkexamples():
@@ -75,10 +83,10 @@ def checkexamples():
         print(f'example1: {result}')
         assert result == 5, result
 
-    #with open('example.txt') as stream:
-    #    result = part2(stream)
-    #    print(f'example2: {result}')
-    #    assert result == 'xxxxx', result
+    with open('example.txt') as stream:
+        result = part2(stream)
+        print(f'example2: {result}')
+        assert result == 7, result
 
 
 def main():
@@ -88,9 +96,9 @@ def main():
         result = part1(stream)
         print(f'part1 {result}')
 
-    #with open('input.txt') as stream:
-    #    result = part2(stream)
-    #    print(f'part2 {result}')
+    with open('input.txt') as stream:
+        result = part2(stream)
+        print(f'part2 {result}')
 
 
 if __name__ == '__main__':
