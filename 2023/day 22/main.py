@@ -20,55 +20,49 @@ def part1(stream):
     ground = Brick(None, (0, 0, 0), (xMax, yMax, 0))
     xyBricks = ListGrid(xMax + 1, yMax + 1, (xMax + 1)*(yMax + 1)*[ground])
 
-    for z in range(zMax + 1):
+    for brick in sorted(bricks):
+        brick.supportedByIndices = {None}
 
-        for brick in bricks:
-            if brick.min.z == z:
-                brick.supportedByIndices = {None}
+        # find highest point(s) under brick
+        zMax = 0
+        for x in range(brick.min.x, brick.max.x + 1):
+            for y in range(brick.min.y, brick.max.y + 1):
+                xyBrick = xyBricks[x, y]
+                if xyBrick.max.z > zMax:
+                    zMax = xyBrick.max.z
+                    brick.supportedByIndices = {xyBrick.index}
+                elif xyBrick.max.z == zMax:
+                    brick.supportedByIndices.add(xyBrick.index)
 
-                # find highest point(s) under brick
-                zMax = 0
-                for x in range(brick.min.x, brick.max.x + 1):
-                    for y in range(brick.min.y, brick.max.y + 1):
-                        xyBrick = xyBricks[x, y]
-                        if xyBrick.max.z > zMax:
-                            zMax = xyBrick.max.z
-                            brick.supportedByIndices = {xyBrick.index}
-                        elif xyBrick.max.z == zMax:
-                            brick.supportedByIndices.add(xyBrick.index)
+        # place brick
+        deltaZ = zMax - brick.min.z + 1
+        brick.min.z += deltaZ
+        brick.max.z += deltaZ
 
-                # place brick
-                deltaZ = zMax - brick.min.z + 1
-                brick.min.z += deltaZ
-                brick.max.z += deltaZ
+        # update highest points on grid
+        for x in range(brick.min.x, brick.max.x + 1):
+            for y in range(brick.min.y, brick.max.y + 1):
+                xyBricks[x, y] = brick
 
-                # update highest points on grid
-                for x in range(brick.min.x, brick.max.x + 1):
-                    for y in range(brick.min.y, brick.max.y + 1):
-                        xyBricks[x, y] = brick
+        # update supporing bricks to show that they support this brick
+        for i in brick.supportedByIndices:
+            if i is not None:
+                bricks[i].supportsIndices.add(brick.index)
 
-                # update supporing bricks to show that they support this brick
-                for i in brick.supportedByIndices:
-                    if i is not None:
-                        bricks[i].supportsIndices.add(brick.index)
+        #print('placed:', brick)
 
-                print('placed:', brick)
+    #print()
+    #for brick in bricks:
+    #    print('Brick', brick.index, 'supports', brick.supportsIndices, 'supportedBy', brick.supportedByIndices)
 
-    print()
+    removableBricks = set(brick.index for brick in bricks)
     for brick in bricks:
-        print('Brick', brick.index, 'supports', brick.supportsIndices, 'supportedBy', brick.supportedByIndices)
+        if len(brick.supportedByIndices) == 1:
+            supporterIndex = next(iter(brick.supportedByIndices))
+            if supporterIndex is not None:  # don't count the ground
+                removableBricks.discard(supporterIndex)
 
-    removeable = set()
-    for brick in bricks:
-        if len(brick.supportedByIndices) > 1:
-            removeable.update(brick.supportedByIndices)
-        if len(brick.supportsIndices) == 0:
-            removeable.add(brick.index)
-
-    print()
-    print('removeable:', removeable)
-
-    return(len(removeable))
+    return len(removableBricks)
 
 
 def part2(stream):

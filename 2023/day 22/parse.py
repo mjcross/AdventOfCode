@@ -34,10 +34,10 @@ class Brick:
         return f'Brick {self.index}: {self.min} ~ {self.max}'
 
     def __gt__(self, other):
-        return self.min.z > other.max.z
+        return self.min.z > other.min.z
     
     def __lt__(self, other):
-        return self.max.z < other.min.z
+        return self.max.z < other.max.z
     
     def getTopBottom(self):
         top = []
